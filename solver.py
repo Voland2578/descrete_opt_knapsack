@@ -25,45 +25,90 @@ def dumb_greedy(items, capacity):
 
     return (taken, value, optimal)
 
+def __sort_items(itemsList, fun):
+    return sorted(itemsList, key=fun)
 
-def exhaustive_greedy_no_relaxation(items, capacity):
+# Assumes that the items is sorted by value/weight
+def __max_value(items, start_idx, capacity):
+    remaining_capacity = capacity
+    max_value = 0
+    for x in items[start_idx:]:
+        if x.weight <= remaining_capacity:
+            remaining_capacity = remaining_capacity - x.weight
+            max_value += x.value
+        else:
+            max_value += x.value * (remaining_capacity / x.weight)
+            break
+    return max_value
+    
+def __attribute_function ( items, attribute, default_if_not_chosen=None):
+    def r(item):
+        value = getattr(items[item[0]], attribute)
+        if default_if_not_chosen is not None:
+            is_chosen = item[1]
+            return default_if_not_chosen if is_chosen == 0 else value
+        return value
+    return r
+
+def transform_sorted_array(sorted_taken, sorted_items):
+    result = [0] * len(sorted_items)
+    true_indices = [x for x in map(__attribute_function(sorted_items,'index'),enumerate(sorted_taken) )]
+    for (idx, element) in enumerate(true_indices):
+        result[element] = sorted_taken[idx]
+    return result
+    
+
+def greedy_relaxation (items, capacity):
     taken = [0] * len(items)
-    (taken_array, value, capacity) =  exhaustive_greedy_step(items, capacity, taken, 0, 0)
-    return (taken_array,value, 0)
+    sorted_by_weight = __sort_items( items, lambda x: -x.value / x.weight)
+    (value, taken_array) =  greedy_relaxation_step (sorted_by_weight, capacity, taken, 0, taken, 0, 0)
+    tranformed_to_original_order = transform_sorted_array(taken_array, sorted_by_weight)
+    return (tranformed_to_original_order,value, 0)
 
-# remaining capacity to fill
-# items - all items array
-# taken - currently taken array
-# idx - we need idx of the item currently being explored
-# return ( new taken array and filled capacity)
-def exhaustive_greedy_step(items, capacity, taken_array, current_value, item_idx):
+def printCurrentState(items, taken_array, full_capacity):
+    filled_capacity = sum( map (__attribute_function(items,'weight'),enumerate(taken_array)))
+    filled_value = sum( map (__attribute_function(items,'value'),enumerate(taken_array)))
+    output = "{} Filled Capacity: {}, Filled Value: {}".format(taken_array, filled_capacity, filled_value)
+    return output
+    
+
+def greedy_relaxation_step(items, capacity, taken_array, current_value, best_array, best_value, item_idx):
 
     # reached the end of processing
     if item_idx == len(items):
-        return taken_array, current_value, capacity
+        return best_value, best_array
 
-    # if we do not take the value
-    not_taken = taken_array.copy()
-    not_taken[item_idx] = 0
-    (processed_not_taken, not_taken_value, not_taken_capacity) = exhaustive_greedy_step(items, capacity, not_taken,
-                                                                                        current_value, item_idx + 1)
-
-    # item information
-    (item_weight, item_value) = (items[item_idx].weight, items[item_idx].value)
-    if item_weight > capacity:
-        return processed_not_taken, not_taken_value, not_taken_capacity
-    else:
+    # what happens if we don't take the item
+    not_taken_max_value = current_value + __max_value(items, item_idx+1, capacity)
+    # item data
+    item_weight, item_value = items[item_idx].weight, items[item_idx].value
+    
+    # examine the item only if it feasible to take it
+    taken_max_value = -1
+    if (item_weight <= capacity):
+        taken_max_value = current_value + __max_value(items, item_idx, capacity)
+    
+    # we should take the element only if the max theoretical value is better than currently observed best_array
+    if taken_max_value > best_value:
         element_taken = taken_array.copy()
         element_taken[item_idx] = 1
-        (processed_taken, taken_value, taken_capacity) = exhaustive_greedy_step(items, capacity - item_weight,
+        if current_value + item_value > best_value:
+            best_value, best_array = current_value + item_value, element_taken
+        # percolate data back update
+        (best_value, best_array) =  greedy_relaxation_step(items, capacity - item_weight,
                                                                                 element_taken,
                                                                                 current_value + item_value,
+                                                                                best_array, best_value,
                                                                                 item_idx + 1)
-
-        if taken_value > not_taken_value:
-            return processed_taken, taken_value, taken_capacity
-        return processed_not_taken, not_taken_value, not_taken_capacity
-
+    if not_taken_max_value > best_value:
+        not_taken = taken_array.copy()
+        not_taken[item_idx] = 0
+        best_value, best_array =  greedy_relaxation_step(items, capacity, not_taken,
+                                                                                current_value ,
+                                                                                best_array, best_value,
+                                                                                item_idx + 1)
+    
+    return best_value, best_array
 
 def solve_it(input_data):
     # Modify this code to run your optimization algorithm
@@ -84,7 +129,7 @@ def solve_it(input_data):
 
     # use dumb greedy algorithm
     # (taken, value, optimal) = dumb_greedy(items, capacity)
-    (taken, value, optimal) = exhaustive_greedy_no_relaxation(items, capacity)
+    ( taken,value,optimal) = greedy_relaxation (items, capacity)
 
     # prepare the solution in the specified output format
     output_data = str(value) + ' ' + str(0) + '\n'
