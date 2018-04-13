@@ -36,10 +36,14 @@ def exhaustive_greedy_no_relaxation(items, capacity):
 # taken - currently taken array
 # idx - we need idx of the item currently being explored
 # return ( new taken array and filled capacity)
-def exhaustive_greedy_step(items, capacity, taken, current_value, item_idx):
-    # need to break
+def exhaustive_greedy_step(items, capacity, taken_array, current_value, item_idx):
+
+    # reached the end of processing
+    if item_idx == len(items):
+        return taken_array, current_value, capacity
+
     # if we do not take the value
-    not_taken = taken.copy()
+    not_taken = taken_array.copy()
     not_taken[item_idx] = 0
     (processed_not_taken, not_taken_value, not_taken_capacity) = exhaustive_greedy_step(items, capacity, not_taken,
                                                                                         current_value, item_idx + 1)
@@ -49,7 +53,7 @@ def exhaustive_greedy_step(items, capacity, taken, current_value, item_idx):
     if item_weight > capacity:
         return processed_not_taken, not_taken_value, not_taken_capacity
     else:
-        element_taken = taken.copy()
+        element_taken = taken_array.copy()
         element_taken[item_idx] = 1
         (processed_taken, taken_value, taken_capacity) = exhaustive_greedy_step(items, capacity - item_weight,
                                                                                 element_taken,
