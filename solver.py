@@ -126,6 +126,9 @@ def solve_it(input_data):
     # use dumb greedy algorithm
     # (taken, value, optimal) = dumb_greedy(items, capacity)
     #( taken,value,optimal) = greedy_relaxation (items, capacity)
+
+    #4 has huge memory requirements as capacity is gigantic
+
     (taken,value, optimal) = dynamic_programming_non_recursive(items, capacity)
     # prepare the solution in the specified output format
     output_data = str(value) + ' ' + str(0) + '\n'

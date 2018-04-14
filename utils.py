@@ -6,8 +6,8 @@ def parse_dyn_board(board, items, capacity):
 
     taken_array = []
     while len(taken_array) < len(items):
-        current_item = items[row]
-
+        # if the adjacent value ( same capacity, fewer items) is the same
+        # it means this item was not selected
         if board[row][col] > board[row-1][col]:
             # item was taken
             taken_array = [1] + taken_array
