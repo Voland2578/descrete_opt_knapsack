@@ -7,6 +7,17 @@ import pdb
 
 Item = namedtuple("Item", ['index', 'value', 'weight'])
 
+def best_first_search(items, capacity):
+    # remove val. Deq
+    idx, val = searchMinNumber(myq.queue, 10)
+    myq.queue = myq.queue[idx + 1:]
+
+    print(myq.queue)
+    while not myq.empty():
+        h = myq.get()
+        print(h)
+
+
 # takes items in order until knapsack is completely full
 def dumb_greedy(items, capacity):
     optimal = 0
