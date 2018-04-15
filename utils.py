@@ -1,3 +1,37 @@
+# return the index and the value
+# of the maximum number < value passed in
+# if nothing is found, return -1
+def searchMinNumber(l, val):
+    start_idx, end_idx = 0, len(l) - 1
+    curr_idx, curr_val = -1, -1
+
+    while True:
+        # check for the end of the list
+        if val > l[end_idx]:
+            return end_idx, l[end_idx]
+
+        length = end_idx - start_idx + 1
+        # list of 1
+        if start_idx == end_idx:
+            if val > l[start_idx]:
+                return start_idx, l[start_idx]
+            else:
+                return curr_idx, curr_val
+
+        split_in_half = start_idx + math.floor(length / 2)
+        # print("st: {}, end: {}, split_idx: {}, split_val: {} curr_idx: {} curr_v: {}".format(start_idx, end_idx, split_in_half, l[split_in_half], curr_idx, curr_val))
+
+        # value higher than largest midway through the list
+        # advance forward
+        if val > l[split_in_half]:
+            curr_idx, curr_val = split_in_half, l[split_in_half]
+            start_idx = split_in_half + 1
+        # value smaller than the largest one. Move back
+        else:
+            end_idx = split_in_half - 1
+
+
+
 def parse_dyn_board(board, items, capacity):
     # unwrap the board
     row, col = len(items) - 1, capacity
