@@ -4,10 +4,62 @@
 from collections import namedtuple
 from utils import *
 import pdb
+import queue
+from queue import PriorityQueue
 
 Item = namedtuple("Item", ['index', 'value', 'weight'])
+BFS = namedtuple("BFS",['path', 'value', 'remaining_capacity','best_possible'])
 
 def best_first_search(items, capacity):
+    # create starting tuple
+    myq = queue.PriorityQueue()
+    best_value = -34
+    root = BFS( [],0, capacity,0)
+    myq.put((0,root))
+    while not myq.empty():
+        best_possible, n = myq.get()
+        print("Got: {} -> {}".format(n, best_possible))
+
+        # what if you have already reached the last element. No more expansion
+        if len(n.path) == len(items):
+            continue
+
+        if -best_possible <= best_value:
+            continue
+
+        index_to_expand,path, remaining_capacity,p_value = len(n.path), n.path, n.remaining_capacity,n.value
+        # expand the item
+        #print("Expanded idx: {} path: {} remaining: {}, current_val: {}".format(index_to_expand,path, remaining_capacity,p_value ))
+        item = items[index_to_expand]
+
+        exp_max = -1
+        if item.weight <= remaining_capacity:
+            exp = path.copy(); exp = exp + [1]
+            item = items[index_to_expand]
+            exp_max = p_value+item.value + max_value(items, index_to_expand + 1, remaining_capacity-item.weight)
+            print("MAX: {}, IDX {}".format(exp_max,index_to_expand))
+            # need parent path, parent value, parent_rem_capacity
+            if exp_max > best_value:
+                cur_value = p_value + item.value
+                print("CUR: {} Best {}".format(cur_value, best_value))
+                if cur_value > best_value:
+                    best_value = cur_value
+            take_obj = BFS ( exp, p_value + item.value, remaining_capacity-item.weight,-exp_max)
+            print ("Adding+: {}".format(take_obj))
+            myq.put( ( -exp_max, take_obj) )
+
+        # not exp
+        nexp = path.copy(); nexp = nexp + [0]
+        nexp_max = max_value(items, index_to_expand+1, capacity)
+        #print("Expanding idx {}. MaxT: {}. MaxNT: {}".format(index_to_expand, exp_max, -nexp_max),-nexp_max)
+
+        if nexp_max > best_value:
+            not_take_obj= BFS(nexp, p_value, remaining_capacity,-nexp_max)
+            print ("Adding- {}".format(not_take_obj))
+            myq.put( (-nexp_max, not_take_obj))
+
+        print("Reval best: {}".format(best_value))
+    '''
     # remove val. Deq
     idx, val = searchMinNumber(myq.queue, 10)
     myq.queue = myq.queue[idx + 1:]
@@ -16,8 +68,8 @@ def best_first_search(items, capacity):
     while not myq.empty():
         h = myq.get()
         print(h)
-
-
+    '''
+    pdb.set_trace()
 # takes items in order until knapsack is completely full
 def dumb_greedy(items, capacity):
     optimal = 0
@@ -140,7 +192,9 @@ def solve_it(input_data):
 
     #4 has huge memory requirements as capacity is gigantic
 
-    (taken,value, optimal) = dynamic_programming_non_recursive(items, capacity)
+    #(taken,value, optimal) = dynamic_programming_non_recursive(items, capacity)
+    (taken,value, optimal) = best_first_search(items, capacity)
+
     # prepare the solution in the specified output format
     output_data = str(value) + ' ' + str(0) + '\n'
     output_data += ' '.join(map(str, taken))
