@@ -4,72 +4,89 @@
 from collections import namedtuple
 from utils import *
 import pdb
-import queue
-from queue import PriorityQueue
-
+import bisect
 Item = namedtuple("Item", ['index', 'value', 'weight'])
 BFS = namedtuple("BFS",['path', 'value', 'remaining_capacity','best_possible'])
 
-def best_first_search(items, capacity):
-    # create starting tuple
-    myq = queue.PriorityQueue()
-    best_value = -34
-    root = BFS( [],0, capacity,0)
-    myq.put((0,root))
-    while not myq.empty():
-        best_possible, n = myq.get()
-        print("Got: {} -> {}".format(n, best_possible))
+def updateBFS(bqueue, keys, item, max_best):
+    insert_idx = bisect.bisect_left(keys, max_best)
+    keys.insert(insert_idx, max_best)
+    bqueue.insert(insert_idx, item)
 
+
+def best_first_search(items, capacity):
+    sorted_by_weight = sort_items( items, lambda x: -x.value / x.weight)
+    (value, taken_array) =  __best_first_search (sorted_by_weight, capacity)
+    # transform back to the original indices
+    tranformed_to_original_order = transform_sorted_array(taken_array, sorted_by_weight)
+    return (tranformed_to_original_order,value, 0)
+
+def __best_first_search(items, capacity):
+
+    # create starting tuple
+    best_value = -34
+    best_solution = None
+    bqueue = [ BFS( [],0, capacity,0)];  keys = [0]
+    qLen = 1
+
+    while len(bqueue) > 0:
+        n = bqueue.pop()
+        keys.pop()
+        #print(n)
+        node_best_possible = n.best_possible
         # what if you have already reached the last element. No more expansion
         if len(n.path) == len(items):
             continue
 
-        if -best_possible <= best_value:
+        if node_best_possible <= best_value:
             continue
-
+        # index to expand is the search level to expand
+        # thus, if the path of the current node is [1,1,0,0], index to expand would be 4
         index_to_expand,path, remaining_capacity,p_value = len(n.path), n.path, n.remaining_capacity,n.value
-        # expand the item
-        #print("Expanded idx: {} path: {} remaining: {}, current_val: {}".format(index_to_expand,path, remaining_capacity,p_value ))
+
+        # expand means you will trying to put 0 or 1 at that index
         item = items[index_to_expand]
 
         exp_max = -1
         if item.weight <= remaining_capacity:
-            exp = path.copy(); exp = exp + [1]
-            item = items[index_to_expand]
-            exp_max = p_value+item.value + max_value(items, index_to_expand + 1, remaining_capacity-item.weight)
-            print("MAX: {}, IDX {}".format(exp_max,index_to_expand))
-            # need parent path, parent value, parent_rem_capacity
+            chosen_item_value = p_value+item.value
+            # maximum value if the item has been chosen
+            exp_max = chosen_item_value + max_value(items, index_to_expand + 1, remaining_capacity-item.weight)
+            # if choosing the item has potential to beat the best value, let's explore
             if exp_max > best_value:
-                cur_value = p_value + item.value
-                print("CUR: {} Best {}".format(cur_value, best_value))
-                if cur_value > best_value:
-                    best_value = cur_value
-            take_obj = BFS ( exp, p_value + item.value, remaining_capacity-item.weight,-exp_max)
-            print ("Adding+: {}".format(take_obj))
-            myq.put( ( -exp_max, take_obj) )
+                next_path = path.copy()
+                next_path = next_path + [1]
+                # if the chosen node value is higher than known best, remember the bests
+                if chosen_item_value > best_value:
+                    best_value = chosen_item_value
+                    best_solution = next_path
+                # create expanded object
+                take_obj = BFS ( next_path, chosen_item_value, remaining_capacity-item.weight,exp_max)
+                updateBFS(bqueue,keys, take_obj, exp_max)
 
         # not exp
-        nexp = path.copy(); nexp = nexp + [0]
-        nexp_max = max_value(items, index_to_expand+1, capacity)
-        #print("Expanding idx {}. MaxT: {}. MaxNT: {}".format(index_to_expand, exp_max, -nexp_max),-nexp_max)
-
+        nexp_max = p_value + max_value(items, index_to_expand+1, capacity)
         if nexp_max > best_value:
-            not_take_obj= BFS(nexp, p_value, remaining_capacity,-nexp_max)
-            print ("Adding- {}".format(not_take_obj))
-            myq.put( (-nexp_max, not_take_obj))
+            next_path = path.copy();
+            next_path = next_path + [0]
+            not_take_obj= BFS(next_path, p_value, remaining_capacity,nexp_max)
+            updateBFS(bqueue, keys, not_take_obj, nexp_max)
 
-        print("Reval best: {}".format(best_value))
-    '''
-    # remove val. Deq
-    idx, val = searchMinNumber(myq.queue, 10)
-    myq.queue = myq.queue[idx + 1:]
 
-    print(myq.queue)
-    while not myq.empty():
-        h = myq.get()
-        print(h)
-    '''
-    pdb.set_trace()
+        if len(bqueue) > 1 and (best_value > bqueue[0].best_possible):
+            #idx = bisect.bisect_left(keys, best_value)
+            #print(bqueue)
+            #print("Dropping {} from queue best{}. qL: {}. idx: {}".format(idx, best_value, len(bqueue), idx))
+
+            #keys = keys[idx:]
+            #bqueue = bqueue[idx:]
+            #print(bqueue)
+            pass
+
+    best_solution = best_solution + [0] * ( len(items) - len(best_solution))
+    #pdb.set_trace()
+
+    return (best_value,best_solution)
 # takes items in order until knapsack is completely full
 def dumb_greedy(items, capacity):
     optimal = 0
