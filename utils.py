@@ -1,3 +1,4 @@
+import sys
 # return the index and the value
 # of the maximum number < value passed in
 # if nothing is found, return -1
@@ -32,17 +33,16 @@ def searchMinNumber(l, val):
 
 
 
-def parse_dyn_board(board, items, capacity):
+def parse_dyn_board(board, items, capacity, get_value_func):
     # unwrap the board
     row, col = len(items) - 1, capacity
     # maximum value
-    max_value = board[row][col]
-
+    max_value = get_value_func(board, row, col)
     taken_array = []
     while len(taken_array) < len(items):
         # if the adjacent value ( same capacity, fewer items) is the same
         # it means this item was not selected
-        if board[row][col] > board[row-1][col]:
+        if get_value_func(board,row,col) > get_value_func(board,row - 1,col):
             # item was taken
             taken_array = [1] + taken_array
             row, col = row - 1, col - items[row].weight
@@ -51,6 +51,13 @@ def parse_dyn_board(board, items, capacity):
             taken_array = [0] + taken_array
             row, col = row - 1, col
     return taken_array, max_value
+
+def dyn_double_array_board_parse(board, row, col):
+    return board[row][col]
+def dyn_memoise_board_parse(board, row, col):
+    return board.get( "{}_{}".format(row, col), sys.maxsize)
+
+
 
 # Print current state
 def printCurrentState(items, taken_array, full_capacity):

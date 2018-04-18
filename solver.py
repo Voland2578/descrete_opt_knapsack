@@ -177,18 +177,43 @@ def dynamic_programming_non_recursive(items, capacity):
 
     #board=[[result[y][x] for y in range(0, len(items))] for x in range(0, capacity + 1)]
     #print(*board, sep='\n')
-
-
-    taken_array, value = parse_dyn_board(result,items, capacity)
+    taken_array, value = parse_dyn_board(result,items, capacity,dyn_double_array_board_parse)
     return taken_array, value, 1
 
 
+def dyn_recursive(items, capacity):
+    memory = {}
+
+    result = __dyn_recursive_inner(items, capacity, memory, len(items)-1)
+    #pdb.set_trace()
+    taken_array, value = parse_dyn_board (memory, items, capacity, dyn_memoise_board_parse)
+    #pdb.set_trace()
+
+    return taken_array,value,1
+
+def __dyn_recursive_inner(items, capacity, memory, idx):
+    if idx == 0:
+        return 0
+    key = "{}_{}".format(idx, capacity)
+    val =  memory.get(key,-1)
+    if val != -1:
+        return val
+    else:
+        item = items[idx]
+        not_taken = __dyn_recursive_inner(items, capacity, memory, idx-1)
+        if item.weight <= capacity:
+            taken = item.value + __dyn_recursive_inner(items, capacity - item.weight, memory, idx-1 )
+            val = max(taken, not_taken)
+        else:
+            val = not_taken
+
+        memory[key] = val
+        return val
 
 
-
-def solve_it(input_data):
+def solve_it(file_location, input_data, algorithm=None):
     # Modify this code to run your optimization algorithm
-
+    print (algorithm)
     # parse the input
     lines = input_data.split('\n')
 
@@ -203,14 +228,18 @@ def solve_it(input_data):
         parts = line.split()
         items.append(Item(i - 1, int(parts[0]), int(parts[1])))
 
-    # use dumb greedy algorithm
-    # (taken, value, optimal) = dumb_greedy(items, capacity)
-    #( taken,value,optimal) = greedy_relaxation (items, capacity)
+    if algorithm is not None:
+        taken, value, optimal = algorithm(items, capacity)
+    else:
+        # use dumb greedy algorithm
+        # (taken, value, optimal) = dumb_greedy(items, capacity)
+        #( taken,value,optimal) = greedy_relaxation (items, capacity)
 
-    #4 has huge memory requirements as capacity is gigantic
+        #4 has huge memory requirements as capacity is gigantic
 
-    #(taken,value, optimal) = dynamic_programming_non_recursive(items, capacity)
-    (taken,value, optimal) = best_first_search(items, capacity)
+        #(taken,value, optimal) = dynamic_programming_non_recursive(items, capacity)
+        (taken,value, optimal) = best_first_search(items, capacity)
+        #(taken, value, optimal) = dyn_recursive(items, capacity)
 
     # prepare the solution in the specified output format
     output_data = str(value) + ' ' + str(0) + '\n'
@@ -225,7 +254,7 @@ if __name__ == '__main__':
         file_location = sys.argv[1].strip()
         with open(file_location, 'r') as input_data_file:
             input_data = input_data_file.read()
-        print(solve_it(input_data))
+        print(solve_it(file_location, input_data))
     else:
         print(
             'This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/ks_4_0)')
